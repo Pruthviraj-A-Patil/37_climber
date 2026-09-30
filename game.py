@@ -26,8 +26,14 @@ def platform_color(index, total):
 
 
 def moving_platform_speed(index, total):
-    """Return a horizontal oscillation speed in pixels/frame for the platform at this index, or None/0 to keep it static."""
-    pass
+    """Return a horizontal oscillation speed for selected platforms."""
+    if total <= 0:
+        return 0
+
+    if index % 3 == 0:
+        return 1
+
+    return 0
 
 
 def on_coin_collected(coin, score):
