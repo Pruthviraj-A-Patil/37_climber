@@ -10,6 +10,8 @@ PLATFORM_H = 14
 COIN_R = 7
 LIVES_START = 3
 
+sparkles = []
+
 
 def platform_color(index, total):
     """Return an (r, g, b) colour based on platform height."""
@@ -37,8 +39,11 @@ def moving_platform_speed(index, total):
 
 
 def on_coin_collected(coin, score):
-    """Called the instant the player collects a coin, after its value has been added to the score. Add a sound or sparkle here."""
-    pass
+    sparkles.append({
+        "x": coin.pos.x,
+        "y": coin.pos.y,
+        "timer": 12
+    })
 
 
 class Platform:
@@ -72,7 +77,7 @@ class Coin:
 
 
 def generate_platforms(num, start_y, width):
-    platforms = [Platform(0, num, 0, start_y, width, movable=False)]  # ground never moves
+    platforms = [Platform(0, num, 0, start_y, width, movable=False)]
     y = start_y - 100
     for i in range(1, num + 1):
         x = random.randint(20, width - 140)
@@ -139,6 +144,7 @@ class Game:
         self.reset()
 
     def reset(self):
+        sparkles.clear()
         self.platforms = generate_platforms(60, HEIGHT - 40, WIDTH)
         self.coins = spawn_coins(self.platforms)
         self.player = Player(WIDTH // 2 - PLAYER_W // 2, HEIGHT - 100)
@@ -178,7 +184,13 @@ class Game:
                 coin.taken = True
                 self.coin_score += 50
                 on_coin_collected(coin, self.score())
+
         self.coins = [c for c in self.coins if not c.taken]
+
+        for sparkle in sparkles[:]:
+            sparkle["timer"] -= 1
+            if sparkle["timer"] <= 0:
+                sparkles.remove(sparkle)
 
         if self.player.rect.top - self.cam_y > HEIGHT + 50:
             self.lives -= 1
@@ -197,9 +209,32 @@ class Game:
             plat.draw(screen, self.cam_y)
         for coin in self.coins:
             coin.draw(screen, self.cam_y)
+
+        for sparkle in sparkles:
+            x = int(sparkle["x"])
+            y = int(sparkle["y"] - self.cam_y)
+            size = 10 + (12 - sparkle["timer"])
+
+            pygame.draw.line(
+                screen, (255, 255, 255),
+                (x - size, y), (x + size, y), 2
+            )
+            pygame.draw.line(
+                screen, (255, 255, 255),
+                (x, y - size), (x, y + size), 2
+            )
+            pygame.draw.circle(
+                screen, (255, 255, 255),
+                (x, y), 3, 1
+            )
+
         self.player.draw(screen, self.cam_y)
 
-        hud = self.font.render(f"Height: {self.height}m  Coins: {self.coin_score // 50}  Lives: {self.lives}", True, (200, 200, 200))
+        hud = self.font.render(
+            f"Height: {self.height}m  Coins: {self.coin_score // 50}  Lives: {self.lives}",
+            True,
+            (200, 200, 200)
+        )
         screen.blit(hud, (10, 10))
 
         if self.state != "play":
